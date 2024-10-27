@@ -49,7 +49,7 @@ jobs:
           - 3306:3306
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: go_gin_sqlboiler_restapi_boilerplage_test
+          MYSQL_DATABASE: go_graphql_practice_test
           TZ: 'Asia/Tokyo'
 
     steps:

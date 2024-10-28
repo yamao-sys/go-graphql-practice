@@ -2,6 +2,11 @@
 
 package model
 
+type Node interface {
+	IsNode()
+	GetID() string
+}
+
 type Mutation struct {
 }
 
@@ -19,6 +24,9 @@ type Todo struct {
 	Done bool   `json:"done"`
 	User *User  `json:"user"`
 }
+
+func (Todo) IsNode()            {}
+func (this Todo) GetID() string { return this.ID }
 
 type User struct {
 	ID   string `json:"id"`

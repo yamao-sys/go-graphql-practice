@@ -8,8 +8,10 @@ import (
 	"app/graph/model"
 	"context"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 // CreateTodo is the resolver for the createTodo field.
@@ -18,7 +20,7 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
 	todo := &model.Todo{
 		Text: input.Text,
-		ID:   fmt.Sprintf("T%d", randNumber),
+		ID:   fmt.Sprintf("todo:%d", randNumber),
 		User: &model.User{ID: input.UserID, Name: "user " + input.UserID},
 	}
 	r.todos = append(r.todos, todo)
@@ -38,6 +40,24 @@ func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
 		ID:   "user:1",
 		Name: "user1",
 	}, nil
+}
+
+// Node is the resolver for the node field.
+func (r *queryResolver) Node(ctx context.Context, id string) (model.Node, error) {
+	s := strings.Split(id, ":")
+	t := s[0]
+
+	switch t {
+	case "todo":
+		for _, todo := range r.todos {
+			if todo.ID == id {
+				return todo, nil
+			}
+		}
+		return nil, errors.New("not found")
+	default:
+		return nil, fmt.Errorf("unknwon type:%s", t)
+	}
 }
 
 // Mutation returns MutationResolver implementation.

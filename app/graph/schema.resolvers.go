@@ -31,6 +31,15 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	return r.todos, nil
 }
 
+// Viewer is the resolver for the viewer field.
+func (r *queryResolver) Viewer(ctx context.Context) (*model.User, error) {
+	// プロダクトコードでは、ユーザを認証して、そのユーザの情報を返すようにしてください。
+	return &model.User{
+		ID:   "user:1",
+		Name: "user1",
+	}, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
@@ -39,21 +48,3 @@ func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
-	thunk := ctxLoaders(ctx).UserById.Load(ctx, obj.User.ID)
-	item, err := thunk()
-	if err != nil {
-		return nil, err
-	} else {
-		return item, nil
-	}
-}
-*/

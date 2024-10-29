@@ -2,6 +2,7 @@ package services
 
 import (
 	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
 	"app/test/factories"
 	"testing"
@@ -29,7 +30,7 @@ func (s *TestAuthServiceSuite) TearDownTest() {
 }
 
 func (s *TestAuthServiceSuite) TestSignUp() {
-	requestParams := dto.SignUpRequest{Name: "test name 1", Email: "test@example.com", Password: "password"}
+	requestParams := model.SignUpInput{Name: "test name 1", Email: "test@example.com", Password: "password"}
 
 	result := testAuthService.SignUp(ctx, requestParams)
 
@@ -47,7 +48,7 @@ func (s *TestAuthServiceSuite) TestSignUp() {
 }
 
 func (s *TestAuthServiceSuite) TestSignUp_ValidationError() {
-	requestParams := dto.SignUpRequest{Name: "test name 1", Email: "", Password: "password"}
+	requestParams := model.SignUpInput{Name: "test name 1", Email: "", Password: "password"}
 
 	result := testAuthService.SignUp(ctx, requestParams)
 

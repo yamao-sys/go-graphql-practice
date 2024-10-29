@@ -2,6 +2,7 @@ package services
 
 import (
 	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
 	"context"
 	"database/sql"
@@ -18,7 +19,7 @@ import (
 )
 
 type AuthService interface {
-	SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse
+	SignUp(ctx context.Context, requestParams model.SignUpInput) *dto.SignUpResponse
 	SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse
 	GetAuthUser(ctx *gin.Context) (*models.User, error)
 	Getuser(ctx context.Context, id int) *models.User
@@ -32,7 +33,7 @@ func NewAuthService(db *sql.DB) AuthService {
 	return &authService{db}
 }
 
-func (as *authService) SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse {
+func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInput) *dto.SignUpResponse {
 	// NOTE: バリデーションチェック
 	validate := validator.New()
 	validationErrors := validate.Struct(requestParams)

@@ -13,7 +13,6 @@ require (
 	github.com/go-playground/validator/v10 v10.22.1
 	github.com/go-sql-driver/mysql v1.8.1
 	github.com/graph-gophers/dataloader/v7 v7.1.0
-	github.com/kamikazezirou/gql-example v0.0.0-20221226170908-6941933c711c
 	github.com/stretchr/testify v1.9.0
 	github.com/vektah/gqlparser/v2 v2.5.18
 	github.com/volatiletech/null/v8 v8.1.2

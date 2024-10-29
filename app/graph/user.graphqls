@@ -1,0 +1,18 @@
+type User {
+	id: ID!
+	name: String!
+	email: String!
+	createdAt: DateTime!
+	updatedAt: DateTime!
+	nameAndEmail: String!
+}
+
+input SignUpInput {
+	Name: String!
+	Email: String! 
+	Password: String!
+}
+
+type Query {
+	signUp(input: SignUpInput!): User!
+}

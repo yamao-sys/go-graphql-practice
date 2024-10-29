@@ -2,33 +2,11 @@
 
 package model
 
-type Node interface {
-	IsNode()
-	GetID() string
-}
-
-type Mutation struct {
-}
-
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
-}
-
 type Query struct {
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
-}
-
-func (Todo) IsNode()            {}
-func (this Todo) GetID() string { return this.ID }
-
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type SignUpInput struct {
+	Name     string `json:"Name"`
+	Email    string `json:"Email"`
+	Password string `json:"Password"`
 }

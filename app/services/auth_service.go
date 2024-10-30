@@ -4,6 +4,7 @@ import (
 	"app/dto"
 	"app/graph/model"
 	models "app/models/generated"
+	"app/validator"
 	"context"
 	"database/sql"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
@@ -35,12 +36,12 @@ func NewAuthService(db *sql.DB) AuthService {
 
 func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInput) *dto.SignUpResponse {
 	// NOTE: バリデーションチェック
-	validate := validator.New()
-	validationErrors := validate.Struct(requestParams)
+	validationErrors := validator.ValidateUser(requestParams)
 	if validationErrors != nil {
 		return &dto.SignUpResponse{User: models.User{}, Error: validationErrors, ErrorType: "validationError"}
 	}
 
+	// NOTE: パラメータをアサイン
 	user := models.User{}
 	user.Name = requestParams.Name
 	user.Email = requestParams.Email
@@ -50,6 +51,7 @@ func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInp
 		return &dto.SignUpResponse{User: user, Error: err, ErrorType: "internalServerError"}
 	}
 	user.Password = hashedPassword
+
 	createErr := user.Insert(ctx, as.db, boil.Infer())
 	if createErr != nil {
 		log.Fatalln(createErr)

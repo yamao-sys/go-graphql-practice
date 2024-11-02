@@ -21,6 +21,13 @@ func NewBadRequestUserView(err error) ViewError {
 	}
 }
 
+func NewUnauthorizedView(err error) ViewError {
+	return ViewError{
+		Code:    http.StatusUnauthorized,
+		Message: err,
+	}
+}
+
 func NewNotFoundUserView(err error) ViewError {
 	return ViewError{
 		Code:    http.StatusNotFound,

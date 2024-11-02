@@ -36,7 +36,7 @@ func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.Creat
 	// NOTE: バリデーションチェック
 	validationErrors := validator.ValidateCreateTodo(requestParams)
 	if validationErrors != nil {
-		return &models.Todo{}, view.NewBadRequestUserView(validationErrors)
+		return &models.Todo{}, view.NewBadRequestView(validationErrors)
 	}
 
 	todo := &models.Todo{}
@@ -47,7 +47,7 @@ func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.Creat
 	// NOTE: Create処理
 	err := todo.Insert(ctx, ts.db, boil.Infer())
 	if err != nil {
-		return &models.Todo{}, view.NewInternalServerErrorUserView(err)
+		return &models.Todo{}, view.NewInternalServerErrorView(err)
 	}
 	return todo, nil
 }
@@ -55,7 +55,7 @@ func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.Creat
 func (ts *todoService) FetchTodoLists(ctx context.Context, userID int) ([]*models.Todo, error) {
 	todos, err := models.Todos(qm.Where("user_id = ?", userID)).All(ctx, ts.db)
 	if err != nil {
-		return models.TodoSlice{}, view.NewNotFoundUserView(err)
+		return models.TodoSlice{}, view.NewNotFoundView(err)
 	}
 
 	return todos, nil
@@ -64,7 +64,7 @@ func (ts *todoService) FetchTodoLists(ctx context.Context, userID int) ([]*model
 func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error) {
 	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
 	if err != nil {
-		return &models.Todo{}, view.NewNotFoundUserView(err)
+		return &models.Todo{}, view.NewNotFoundView(err)
 	}
 
 	return todo, nil
@@ -73,13 +73,13 @@ func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) (*mode
 func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams model.UpdateTodoInput, userID int) (*models.Todo, error) {
 	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
 	if err != nil {
-		return &models.Todo{}, view.NewNotFoundUserView(err)
+		return &models.Todo{}, view.NewNotFoundView(err)
 	}
 
 	// NOTE: バリデーションチェック
 	validationErrors := validator.ValidateUpdateTodo(requestParams)
 	if validationErrors != nil {
-		return &models.Todo{}, view.NewBadRequestUserView(validationErrors)
+		return &models.Todo{}, view.NewBadRequestView(validationErrors)
 	}
 
 	todo.Title = requestParams.Title
@@ -88,7 +88,7 @@ func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams mod
 	// NOTE: Update処理
 	_, updateError := todo.Update(ctx, ts.db, boil.Infer())
 	if updateError != nil {
-		return &models.Todo{}, view.NewInternalServerErrorUserView(updateError)
+		return &models.Todo{}, view.NewInternalServerErrorView(updateError)
 	}
 	return todo, nil
 }
@@ -96,12 +96,12 @@ func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams mod
 func (ts *todoService) DeleteTodo(ctx context.Context, id int, userID int) (string, error) {
 	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
 	if err != nil {
-		return strconv.Itoa(id), view.NewNotFoundUserView(err)
+		return strconv.Itoa(id), view.NewNotFoundView(err)
 	}
 
 	_, deleteError := todo.Delete(ctx, ts.db)
 	if deleteError != nil {
-		return strconv.Itoa(id), view.NewInternalServerErrorUserView(deleteError)
+		return strconv.Itoa(id), view.NewInternalServerErrorView(deleteError)
 	}
 	return strconv.Itoa(id), nil
 }

@@ -39,7 +39,7 @@ func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInp
 	// NOTE: バリデーションチェック
 	validationErrors := validator.ValidateUser(requestParams)
 	if validationErrors != nil {
-		return &models.User{}, view.NewBadRequestUserView(validationErrors)
+		return &models.User{}, view.NewBadRequestView(validationErrors)
 	}
 
 	// NOTE: パラメータをアサイン
@@ -49,13 +49,13 @@ func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInp
 	// NOTE: パスワードをハッシュ化の上、Create処理
 	hashedPassword, err := as.encryptPassword(requestParams.Password)
 	if err != nil {
-		return &user, view.NewInternalServerErrorUserView(err)
+		return &user, view.NewInternalServerErrorView(err)
 	}
 	user.Password = hashedPassword
 
 	createErr := user.Insert(ctx, as.db, boil.Infer())
 	if createErr != nil {
-		return &user, view.NewInternalServerErrorUserView(createErr)
+		return &user, view.NewInternalServerErrorView(createErr)
 	}
 
 	return &user, nil
@@ -65,12 +65,12 @@ func (as *authService) SignIn(ctx context.Context, requestParams model.SignInInp
 	// NOTE: emailからユーザの取得
 	user, err := models.Users(qm.Where("email = ?", requestParams.Email)).One(ctx, as.db)
 	if err != nil {
-		return "", &models.User{}, view.NewNotFoundUserView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
+		return "", &models.User{}, view.NewNotFoundView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 
 	// NOTE: パスワードの照合
 	if err := as.compareHashPassword(user.Password, requestParams.Password); err != nil {
-		return "", &models.User{}, view.NewNotFoundUserView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
+		return "", &models.User{}, view.NewNotFoundView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
@@ -79,7 +79,7 @@ func (as *authService) SignIn(ctx context.Context, requestParams model.SignInInp
 	// TODO: JWT_SECRETを環境変数に切り出す
 	tokenString, err := token.SignedString([]byte("abcdefghijklmn"))
 	if err != nil {
-		return "", &models.User{}, view.NewInternalServerErrorUserView(err)
+		return "", &models.User{}, view.NewInternalServerErrorView(err)
 	}
 	return tokenString, user, nil
 }

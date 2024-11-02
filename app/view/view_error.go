@@ -14,7 +14,7 @@ func (e ViewError) Error() string {
 	return fmt.Sprintf("[%d]%s", e.Code, e.Message)
 }
 
-func NewBadRequestUserView(err error) ViewError {
+func NewBadRequestView(err error) ViewError {
 	return ViewError{
 		Code:    http.StatusBadRequest,
 		Message: err,
@@ -28,14 +28,14 @@ func NewUnauthorizedView(err error) ViewError {
 	}
 }
 
-func NewNotFoundUserView(err error) ViewError {
+func NewNotFoundView(err error) ViewError {
 	return ViewError{
 		Code:    http.StatusNotFound,
 		Message: err,
 	}
 }
 
-func NewInternalServerErrorUserView(err error) ViewError {
+func NewInternalServerErrorView(err error) ViewError {
 	return ViewError{
 		Code:    http.StatusInternalServerError,
 		Message: err,

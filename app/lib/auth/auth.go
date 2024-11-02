@@ -5,7 +5,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 
 	"github.com/golang-jwt/jwt"
@@ -50,7 +49,6 @@ func Middleware(next http.Handler, db *sql.DB) http.Handler {
 			fmt.Errorf("invalid token")
 		}
 		user, err := models.FindUser(ctx, db, userID)
-		log.Println(user)
 
 		// NOTE: Contextにuserをセットする
 		withUserContext := context.WithValue(r.Context(), userKey, user)
@@ -61,10 +59,7 @@ func Middleware(next http.Handler, db *sql.DB) http.Handler {
 }
 
 func GetUser(ctx context.Context) *models.User {
-	user, e := ctx.Value(userKey).(*models.User)
-	if e == false {
-		log.Println(e)
-	}
+	user, _ := ctx.Value(userKey).(*models.User)
 	return user
 }
 

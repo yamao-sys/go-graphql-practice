@@ -248,6 +248,111 @@ func (s *TestTodoResolverSuite) TestFetchTodo_NotFound() {
 	assert.Equal(s.T(), float64(404), responseBody["errors"][0]["extensions"]["code"])
 }
 
+func (s *TestTodoResolverSuite) TestFetchTodoLists_Unauthorized() {
+	s.SetAuthUser()
+	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}
+	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test todos %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	query := map[string]interface{}{
+		"query": `query {
+            fetchTodoLists {
+                id,
+                title,
+                content,
+                createdAt,
+				updatedAt
+            }
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string]([1]map[string]map[string]interface{}))
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Equal(s.T(), float64(401), responseBody["errors"][0]["extensions"]["code"])
+}
+
+func (s *TestTodoResolverSuite) TestFetchTodoLists() {
+	s.SetAuthUser()
+	s.signIn()
+
+	var todosSlice models.TodoSlice
+	todosSlice = append(todosSlice, &models.Todo{
+		Title:   "test title 1",
+		Content: null.String{String: "test content 1", Valid: true},
+		UserID:  user.ID,
+	})
+	todosSlice = append(todosSlice, &models.Todo{
+		Title:   "test title 2",
+		Content: null.String{String: "test content 2", Valid: true},
+		UserID:  user.ID,
+	})
+	_, err := todosSlice.InsertAll(ctx, DBCon, boil.Infer())
+	if err != nil {
+		s.T().Fatalf("failed to create TestFetchTodoLists Data: %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	query := map[string]interface{}{
+		"query": `query {
+            fetchTodoLists {
+                id,
+                title,
+                content,
+                createdAt,
+				updatedAt
+            }
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "token="+token)
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string](map[string]([]map[string]interface{})))
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Len(s.T(), responseBody["data"]["fetchTodoLists"], 2)
+}
+
+func (s *TestTodoResolverSuite) TestFetchTodoLists_CountZero() {
+	s.SetAuthUser()
+	s.signIn()
+
+	res := httptest.NewRecorder()
+	query := map[string]interface{}{
+		"query": `query {
+            fetchTodoLists {
+                id,
+                title,
+                content,
+                createdAt,
+				updatedAt
+            }
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "token="+token)
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string](map[string]([]map[string]interface{})))
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Len(s.T(), responseBody["data"]["fetchTodoLists"], 0)
+}
+
 func TestTodoResolver(t *testing.T) {
 	// テストスイートを実施
 	suite.Run(t, new(TestTodoResolverSuite))

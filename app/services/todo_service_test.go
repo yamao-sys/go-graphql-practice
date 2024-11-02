@@ -67,7 +67,7 @@ func (s *TestTodoServiceSuite) TestCreateTodo_ValidationError() {
 	assert.False(s.T(), isExistTodo)
 }
 
-func (s *TestTodoServiceSuite) TestFetchTodosList() {
+func (s *TestTodoServiceSuite) TestFetchTodoLists() {
 	var todosSlice models.TodoSlice
 	todosSlice = append(todosSlice, &models.Todo{
 		Title:   "test title 1",
@@ -81,14 +81,13 @@ func (s *TestTodoServiceSuite) TestFetchTodosList() {
 	})
 	_, err := todosSlice.InsertAll(ctx, DBCon, boil.Infer())
 	if err != nil {
-		s.T().Fatalf("failed to create TestFetchTodosList Data: %v", err)
+		s.T().Fatalf("failed to create TestFetchTodoLists Data: %v", err)
 	}
 
-	result := testTodoService.FetchTodosList(ctx, user.ID)
+	todos, err := testTodoService.FetchTodoLists(ctx, user.ID)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.ErrorType)
-	assert.Len(s.T(), result.Todos, 2)
+	assert.Nil(s.T(), err)
+	assert.Len(s.T(), todos, 2)
 }
 
 func (s *TestTodoServiceSuite) TestFetchTodo() {

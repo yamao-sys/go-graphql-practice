@@ -13,6 +13,7 @@ input CreateTodoInput {
 
 extend type Query {
 	fetchTodo(id: ID!): Todo!
+	fetchTodoLists: [Todo!]!
 }
 
 extend type Mutation {

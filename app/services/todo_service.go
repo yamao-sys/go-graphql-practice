@@ -7,7 +7,6 @@ import (
 	"app/view"
 	"context"
 	"database/sql"
-	"fmt"
 
 	"app/validator"
 
@@ -19,7 +18,7 @@ import (
 
 type TodoService interface {
 	CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error)
-	FetchTodosList(ctx context.Context, userID int) *dto.TodosListResponse
+	FetchTodoLists(ctx context.Context, userID int) ([]*models.Todo, error)
 	FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error)
 	UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse
 	DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse
@@ -53,14 +52,13 @@ func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.Creat
 	return todo, nil
 }
 
-func (ts *todoService) FetchTodosList(ctx context.Context, userID int) *dto.TodosListResponse {
-	todos, error := models.Todos(qm.Where("user_id = ?", userID)).All(ctx, ts.db)
-	if error != nil {
-		return &dto.TodosListResponse{Todos: models.TodoSlice{}, Error: error, ErrorType: "notFound"}
+func (ts *todoService) FetchTodoLists(ctx context.Context, userID int) ([]*models.Todo, error) {
+	todos, err := models.Todos(qm.Where("user_id = ?", userID)).All(ctx, ts.db)
+	if err != nil {
+		return models.TodoSlice{}, view.NewNotFoundUserView(err)
 	}
-	fmt.Printf("todos %v", todos)
 
-	return &dto.TodosListResponse{Todos: todos, Error: nil, ErrorType: ""}
+	return todos, nil
 }
 
 func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error) {

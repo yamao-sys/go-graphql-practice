@@ -36,6 +36,16 @@ func (r *queryResolver) FetchTodo(ctx context.Context, id string) (*models.Todo,
 	return r.todoService.FetchTodo(ctx, intID, user.ID)
 }
 
+// FetchTodoLists is the resolver for the fetchTodoLists field.
+func (r *queryResolver) FetchTodoLists(ctx context.Context) ([]*models.Todo, error) {
+	user := auth.GetUser(ctx)
+	if user == nil {
+		return models.TodoSlice{}, view.NewUnauthorizedView(fmt.Errorf("unauthorized error"))
+	}
+
+	return r.todoService.FetchTodoLists(ctx, user.ID)
+}
+
 // Content is the resolver for the content field.
 func (r *todoResolver) Content(ctx context.Context, obj *models.Todo) (string, error) {
 	return obj.Content.String, nil

@@ -12,6 +12,7 @@ import (
 	"app/view"
 	"context"
 	"fmt"
+	"strconv"
 )
 
 // CreateTodo is the resolver for the createTodo field.
@@ -22,6 +23,17 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.CreateTod
 	}
 
 	return r.todoService.CreateTodo(ctx, input, user.ID)
+}
+
+// FetchTodo is the resolver for the fetchTodo field.
+func (r *queryResolver) FetchTodo(ctx context.Context, id string) (*models.Todo, error) {
+	user := auth.GetUser(ctx)
+	if user == nil {
+		return &models.Todo{}, view.NewUnauthorizedView(fmt.Errorf("unauthorized error"))
+	}
+
+	intID, _ := strconv.Atoi(id)
+	return r.todoService.FetchTodo(ctx, intID, user.ID)
 }
 
 // Content is the resolver for the content field.
@@ -42,8 +54,12 @@ func (r *todoResolver) UpdatedAt(ctx context.Context, obj *models.Todo) (string,
 // Mutation returns generated.MutationResolver implementation.
 func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
 
+// Query returns generated.QueryResolver implementation.
+func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
+
 // Todo returns generated.TodoResolver implementation.
 func (r *Resolver) Todo() generated.TodoResolver { return &todoResolver{r} }
 
 type mutationResolver struct{ *Resolver }
+type queryResolver struct{ *Resolver }
 type todoResolver struct{ *Resolver }

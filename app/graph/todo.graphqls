@@ -11,9 +11,9 @@ input CreateTodoInput {
 	content: String!
 }
 
-# extend type Query {
-# 	//
-# }
+extend type Query {
+	fetchTodo(id: ID!): Todo!
+}
 
 extend type Mutation {
 	createTodo(input: CreateTodoInput!): Todo!

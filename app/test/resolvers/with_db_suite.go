@@ -26,6 +26,7 @@ var (
 	DBCon *sql.DB
 	ctx   context.Context
 	token string
+	user  *models.User
 )
 
 // func (s *WithDBSuite) SetupSuite()                           {} // テストスイート実施前の処理
@@ -52,13 +53,15 @@ func (s *WithDBSuite) CloseDB() {
 	DBCon.Close()
 }
 
-func (s *WithDBSuite) signIn() {
+func (s *WithDBSuite) SetAuthUser() {
 	// NOTE: テスト用ユーザの作成
-	user := factories.UserFactory.MustCreateWithOption(map[string]interface{}{"Email": "test@example.com"}).(*models.User)
+	user = factories.UserFactory.MustCreateWithOption(map[string]interface{}{"Email": "test@example.com"}).(*models.User)
 	if err := user.Insert(ctx, DBCon, boil.Infer()); err != nil {
 		s.T().Fatalf("failed to create test user %v", err)
 	}
+}
 
+func (s *WithDBSuite) signIn() {
 	res := httptest.NewRecorder()
 	query := map[string]interface{}{
 		"query": `mutation {

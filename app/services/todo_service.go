@@ -20,7 +20,7 @@ import (
 type TodoService interface {
 	CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error)
 	FetchTodosList(ctx context.Context, userID int) *dto.TodosListResponse
-	FetchTodo(ctx context.Context, id int, userID int) *dto.FetchTodoResponse
+	FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error)
 	UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse
 	DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse
 }
@@ -63,13 +63,13 @@ func (ts *todoService) FetchTodosList(ctx context.Context, userID int) *dto.Todo
 	return &dto.TodosListResponse{Todos: todos, Error: nil, ErrorType: ""}
 }
 
-func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) *dto.FetchTodoResponse {
-	todo, error := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
-	if error != nil {
-		return &dto.FetchTodoResponse{Todo: &models.Todo{}, Error: error, ErrorType: "notFound"}
+func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error) {
+	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
+	if err != nil {
+		return &models.Todo{}, view.NewNotFoundUserView(err)
 	}
 
-	return &dto.FetchTodoResponse{Todo: todo, Error: nil, ErrorType: ""}
+	return todo, nil
 }
 
 func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse {

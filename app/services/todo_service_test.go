@@ -98,11 +98,10 @@ func (s *TestTodoServiceSuite) TestFetchTodo() {
 	}
 	testTodo.Reload(ctx, DBCon)
 
-	result := testTodoService.FetchTodo(ctx, testTodo.ID, user.ID)
+	todo, err := testTodoService.FetchTodo(ctx, testTodo.ID, user.ID)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.ErrorType)
-	assert.Equal(s.T(), testTodo.Title, result.Todo.Title)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), testTodo.Title, todo.Title)
 }
 
 func (s *TestTodoServiceSuite) TestUpdateTodo() {

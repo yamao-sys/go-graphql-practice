@@ -1,8 +1,6 @@
 package graph
 
-import (
-	"app/services"
-)
+import "app/services"
 
 // This file will not be regenerated automatically.
 //

@@ -3,10 +3,12 @@ package lib
 import (
 	"app/graph"
 	"app/graph/generated"
+	"app/lib/auth"
 	"app/services"
 	"app/view"
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/handler"
@@ -37,4 +39,9 @@ func GetGraphQLServer(authService services.AuthService) *handler.Server {
 	})
 
 	return srv
+}
+
+func GetGraphQLHttpHandler(srv *handler.Server) http.Handler {
+	graphSrv := graph.Middleware(srv)
+	return auth.Middleware(graphSrv)
 }

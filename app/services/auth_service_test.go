@@ -1,7 +1,6 @@
 package services
 
 import (
-	"app/dto"
 	"app/graph/model"
 	models "app/models/generated"
 	"app/test/factories"
@@ -67,13 +66,12 @@ func (s *TestAuthServiceSuite) TestSignIn() {
 		s.T().Fatalf("failed to create test user %v", err)
 	}
 
-	requestParams := dto.SignInRequest{Email: "test@example.com", Password: "password"}
+	requestParams := model.SignInInput{Email: "test@example.com", Password: "password"}
 
-	result := testAuthService.SignIn(ctx, requestParams)
+	token, _, err := testAuthService.SignIn(ctx, requestParams)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.NotFoundMessage)
-	assert.NotNil(s.T(), result.TokenString)
+	assert.NotNil(s.T(), token)
+	assert.Nil(s.T(), err)
 }
 
 func (s *TestAuthServiceSuite) TestSignIn_NotFoundError() {
@@ -83,11 +81,12 @@ func (s *TestAuthServiceSuite) TestSignIn_NotFoundError() {
 		s.T().Fatalf("failed to create test user %v", err)
 	}
 
-	requestParams := dto.SignInRequest{Email: "test_1@example.com", Password: "password"}
+	requestParams := model.SignInInput{Email: "test_1@example.com", Password: "password"}
 
-	result := testAuthService.SignIn(ctx, requestParams)
+	token, _, err := testAuthService.SignIn(ctx, requestParams)
 
-	assert.Equal(s.T(), "メールアドレスまたはパスワードに該当するユーザが存在しません。", result.NotFoundMessage)
+	assert.Empty(s.T(), token)
+	assert.NotNil(s.T(), err)
 }
 
 func TestAuthService(t *testing.T) {

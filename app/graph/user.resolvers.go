@@ -7,9 +7,9 @@ package graph
 import (
 	generated1 "app/graph/generated"
 	"app/graph/model"
+	"app/lib/auth"
 	models "app/models/generated"
 	"context"
-	"fmt"
 )
 
 // SignUp is the resolver for the signUp field.
@@ -19,7 +19,9 @@ func (r *mutationResolver) SignUp(ctx context.Context, input model.SignUpInput) 
 
 // SignIn is the resolver for the signIn field.
 func (r *mutationResolver) SignIn(ctx context.Context, input model.SignInInput) (*models.User, error) {
-	panic(fmt.Errorf("not implemented: SignIn - signIn"))
+	token, user, err := r.authService.SignIn(ctx, input)
+	auth.SetAuthCookie(ctx, token)
+	return user, err
 }
 
 // CreatedAt is the resolver for the createdAt field.

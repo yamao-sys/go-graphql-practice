@@ -1,7 +1,6 @@
 package services
 
 import (
-	"app/dto"
 	"app/graph/model"
 	models "app/models/generated"
 	"app/validator"
@@ -19,9 +18,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type TokenString = string
+
 type AuthService interface {
 	SignUp(ctx context.Context, requestParams model.SignUpInput) (*models.User, error)
-	SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse
+	SignIn(ctx context.Context, requestParams model.SignInInput) (TokenString, *models.User, error)
 	GetAuthUser(ctx *gin.Context) (*models.User, error)
 	Getuser(ctx context.Context, id int) *models.User
 }
@@ -60,16 +61,16 @@ func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInp
 	return &user, nil
 }
 
-func (as *authService) SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse {
+func (as *authService) SignIn(ctx context.Context, requestParams model.SignInInput) (TokenString, *models.User, error) {
 	// NOTE: emailからユーザの取得
 	user, err := models.Users(qm.Where("email = ?", requestParams.Email)).One(ctx, as.db)
 	if err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "メールアドレスまたはパスワードに該当するユーザが存在しません。", Error: nil}
+		return "", &models.User{}, view.NewNotFoundUserView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 
 	// NOTE: パスワードの照合
 	if err := as.compareHashPassword(user.Password, requestParams.Password); err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "メールアドレスまたはパスワードに該当するユーザが存在しません。", Error: nil}
+		return "", &models.User{}, view.NewNotFoundUserView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
@@ -78,9 +79,9 @@ func (as *authService) SignIn(ctx context.Context, requestParams dto.SignInReque
 	// TODO: JWT_SECRETを環境変数に切り出す
 	tokenString, err := token.SignedString([]byte("abcdefghijklmn"))
 	if err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "", Error: err}
+		return "", &models.User{}, view.NewInternalServerErrorUserView(err)
 	}
-	return &dto.SignInResponse{TokenString: tokenString, NotFoundMessage: "", Error: nil}
+	return tokenString, user, nil
 }
 
 func (as *authService) GetAuthUser(ctx *gin.Context) (*models.User, error) {

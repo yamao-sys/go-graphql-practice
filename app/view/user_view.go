@@ -21,6 +21,13 @@ func NewBadRequestUserView(err error) ViewError {
 	}
 }
 
+func NewNotFoundUserView(err error) ViewError {
+	return ViewError{
+		Code:    http.StatusNotFound,
+		Message: err,
+	}
+}
+
 func NewInternalServerErrorUserView(err error) ViewError {
 	return ViewError{
 		Code:    http.StatusInternalServerError,

@@ -4,8 +4,8 @@ import (
 	"app/lib"
 	models "app/models/generated"
 	"app/services"
+	"app/test/factories"
 	"encoding/json"
-	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +14,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
@@ -99,13 +100,42 @@ func (s *TestUserResolverSuite) TestSignUp_ValidationError() {
 	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
 	assert.Equal(s.T(), float64(400), responseBody["errors"][0]["extensions"]["code"])
 	assert.Contains(s.T(), responseBody["errors"][0]["extensions"]["error"], "Email")
-	log.Println(responseBody)
 
 	// NOTE: ユーザが作成されていないことを確認
 	isExistUser, _ := models.Users(
 		qm.Where("name = ? AND email = ?", "test name 1", "test@example.com"),
 	).Exists(ctx, DBCon)
 	assert.False(s.T(), isExistUser)
+}
+
+func (s *TestUserResolverSuite) TestSignIn() {
+	// NOTE: テスト用ユーザの作成
+	user := factories.UserFactory.MustCreateWithOption(map[string]interface{}{"Email": "test@example.com"}).(*models.User)
+	if err := user.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test user %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	query := map[string]interface{}{
+		"query": `mutation {
+            signIn(input: {
+                Email: "test@example.com",
+                Password: "password"
+            }) {
+                id,
+                name,
+                email,
+                nameAndEmail
+            }
+        }`,
+	}
+
+	signInRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signInRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	lib.GetGraphQLHttpHandler(testUserGraphQLServer).ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
 }
 
 func TestUserResolver(t *testing.T) {

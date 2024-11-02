@@ -23,3 +23,8 @@ type SignUpInput struct {
 	Email    string `json:"Email"`
 	Password string `json:"Password"`
 }
+
+type UpdateTodoInput struct {
+	Title   string `json:"title"`
+	Content string `json:"content"`
+}

@@ -25,6 +25,17 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.CreateTod
 	return r.todoService.CreateTodo(ctx, input, user.ID)
 }
 
+// UpdateTodo is the resolver for the updateTodo field.
+func (r *mutationResolver) UpdateTodo(ctx context.Context, id string, input model.UpdateTodoInput) (*models.Todo, error) {
+	user := auth.GetUser(ctx)
+	if user == nil {
+		return &models.Todo{}, view.NewUnauthorizedView(fmt.Errorf("unauthorized error"))
+	}
+
+	intID, _ := strconv.Atoi(id)
+	return r.todoService.UpdateTodo(ctx, intID, input, user.ID)
+}
+
 // FetchTodo is the resolver for the fetchTodo field.
 func (r *queryResolver) FetchTodo(ctx context.Context, id string) (*models.Todo, error) {
 	user := auth.GetUser(ctx)

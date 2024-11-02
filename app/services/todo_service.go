@@ -20,7 +20,7 @@ type TodoService interface {
 	CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error)
 	FetchTodoLists(ctx context.Context, userID int) ([]*models.Todo, error)
 	FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error)
-	UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse
+	UpdateTodo(ctx context.Context, id int, requestParams model.UpdateTodoInput, userID int) (*models.Todo, error)
 	DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse
 }
 
@@ -34,7 +34,7 @@ func NewTodoService(db *sql.DB) TodoService {
 
 func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error) {
 	// NOTE: バリデーションチェック
-	validationErrors := validator.ValidateTodo(requestParams)
+	validationErrors := validator.ValidateCreateTodo(requestParams)
 	if validationErrors != nil {
 		return &models.Todo{}, view.NewBadRequestUserView(validationErrors)
 	}
@@ -70,17 +70,17 @@ func (ts *todoService) FetchTodo(ctx context.Context, id int, userID int) (*mode
 	return todo, nil
 }
 
-func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse {
-	todo, error := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
-	if error != nil {
-		return &dto.UpdateTodoResponse{Todo: &models.Todo{}, Error: error, ErrorType: "notFound"}
+func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams model.UpdateTodoInput, userID int) (*models.Todo, error) {
+	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
+	if err != nil {
+		return &models.Todo{}, view.NewNotFoundUserView(err)
 	}
 
 	// NOTE: バリデーションチェック
-	// validationErrors := validator.ValidateTodo(requestParams)
-	// if validationErrors != nil {
-	// 	return &dto.UpdateTodoResponse{Todo: todo, Error: validationErrors, ErrorType: "validationError"}
-	// }
+	validationErrors := validator.ValidateUpdateTodo(requestParams)
+	if validationErrors != nil {
+		return &models.Todo{}, view.NewBadRequestUserView(validationErrors)
+	}
 
 	todo.Title = requestParams.Title
 	todo.Content = null.String{String: requestParams.Content, Valid: true}
@@ -88,9 +88,9 @@ func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams dto
 	// NOTE: Update処理
 	_, updateError := todo.Update(ctx, ts.db, boil.Infer())
 	if updateError != nil {
-		return &dto.UpdateTodoResponse{Todo: todo, Error: updateError, ErrorType: "internalServerError"}
+		return &models.Todo{}, view.NewInternalServerErrorUserView(updateError)
 	}
-	return &dto.UpdateTodoResponse{Todo: todo, Error: nil, ErrorType: ""}
+	return todo, nil
 }
 
 func (ts *todoService) DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse {

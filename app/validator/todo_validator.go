@@ -6,7 +6,7 @@ import (
 	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
 
-func ValidateTodo(input model.CreateTodoInput) error {
+func ValidateCreateTodo(input model.CreateTodoInput) error {
 	return validation.ValidateStruct(&input,
 		validation.Field(
 			&input.Title,
@@ -14,5 +14,14 @@ func ValidateTodo(input model.CreateTodoInput) error {
 			validation.RuneLength(1, 50).Error("タイトルは1 ~ 50文字での入力をお願いします。"),
 		),
 	)
+}
 
+func ValidateUpdateTodo(input model.UpdateTodoInput) error {
+	return validation.ValidateStruct(&input,
+		validation.Field(
+			&input.Title,
+			validation.Required.Error("タイトルは必須入力です。"),
+			validation.RuneLength(1, 50).Error("タイトルは1 ~ 50文字での入力をお願いします。"),
+		),
+	)
 }

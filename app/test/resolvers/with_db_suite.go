@@ -61,7 +61,7 @@ func (s *WithDBSuite) SetAuthUser() {
 	}
 }
 
-func (s *WithDBSuite) signIn() {
+func (s *WithDBSuite) SignIn() {
 	res := httptest.NewRecorder()
 	query := map[string]interface{}{
 		"query": `mutation {

@@ -1,7 +1,6 @@
 package services
 
 import (
-	"app/dto"
 	"app/graph/model"
 	models "app/models/generated"
 	"app/test/factories"
@@ -109,11 +108,12 @@ func (s *TestTodoServiceSuite) TestUpdateTodo() {
 		s.T().Fatalf("failed to create test todos %v", err)
 	}
 
-	requestParams := dto.UpdateTodoRequest{Title: "test updated title 1", Content: "test updated content 1"}
-	result := testTodoService.UpdateTodo(ctx, testTodo.ID, requestParams, user.ID)
+	requestParams := model.UpdateTodoInput{Title: "test updated title 1", Content: "test updated content 1"}
+	todo, err := testTodoService.UpdateTodo(ctx, testTodo.ID, requestParams, user.ID)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.ErrorType)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), "test updated title 1", todo.Title)
+	assert.Equal(s.T(), null.String{String: "test updated content 1", Valid: true}, todo.Content)
 	// NOTE: TODOが更新されていることの確認
 	if err := testTodo.Reload(ctx, DBCon); err != nil {
 		s.T().Fatalf("failed to reload test todos %v", err)
@@ -122,24 +122,24 @@ func (s *TestTodoServiceSuite) TestUpdateTodo() {
 	assert.Equal(s.T(), null.String{String: "test updated content 1", Valid: true}, testTodo.Content)
 }
 
-// func (s *TestTodoServiceSuite) TestUpdateTodo_ValidationError() {
-// 	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}
-// 	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
-// 		s.T().Fatalf("failed to create test todos %v", err)
-// 	}
+func (s *TestTodoServiceSuite) TestUpdateTodo_ValidationError() {
+	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}
+	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test todos %v", err)
+	}
 
-// 	requestParams := dto.UpdateTodoRequest{Title: "", Content: "test updated content 1"}
-// 	result := testTodoService.UpdateTodo(ctx, testTodo.ID, requestParams, user.ID)
+	requestParams := model.UpdateTodoInput{Title: "", Content: "test updated content 1"}
+	todo, err := testTodoService.UpdateTodo(ctx, testTodo.ID, requestParams, user.ID)
 
-// 	assert.NotNil(s.T(), result.Error)
-// 	assert.Equal(s.T(), "validationError", result.ErrorType)
-// 	// NOTE: Todoが更新されていないこと
-// 	if err := testTodo.Reload(ctx, DBCon); err != nil {
-// 		s.T().Fatalf("failed to reload test todos %v", err)
-// 	}
-// 	assert.Equal(s.T(), "test title 1", testTodo.Title)
-// 	assert.Equal(s.T(), null.String{String: "test content 1", Valid: true}, testTodo.Content)
-// }
+	assert.NotNil(s.T(), err)
+	assert.Equal(s.T(), &models.Todo{}, todo)
+	// NOTE: Todoが更新されていないこと
+	if err := testTodo.Reload(ctx, DBCon); err != nil {
+		s.T().Fatalf("failed to reload test todos %v", err)
+	}
+	assert.Equal(s.T(), "test title 1", testTodo.Title)
+	assert.Equal(s.T(), null.String{String: "test content 1", Valid: true}, testTodo.Content)
+}
 
 func (s *TestTodoServiceSuite) TestDeleteTodo() {
 	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}

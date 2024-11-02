@@ -39,25 +39,7 @@ func (r *userResolver) NameAndEmail(ctx context.Context, obj *models.User) (stri
 	return obj.Name + "_" + obj.Email, nil
 }
 
-// Mutation returns generated1.MutationResolver implementation.
-func (r *Resolver) Mutation() generated1.MutationResolver { return &mutationResolver{r} }
-
 // User returns generated1.UserResolver implementation.
 func (r *Resolver) User() generated1.UserResolver { return &userResolver{r} }
 
-type mutationResolver struct{ *Resolver }
 type userResolver struct{ *Resolver }
-
-// !!! WARNING !!!
-// The code below was going to be deleted when updating resolvers. It has been copied here so you have
-// one last chance to move it out of harms way if you want. There are two reasons this happens:
-//  - When renaming or deleting a resolver the old code will be put in here. You can safely delete
-//    it when you're done.
-//  - You have helper methods in this file. Move them out to keep these resolver files clean.
-/*
-	func (r *queryResolver) SignUp(ctx context.Context, input model.SignUpInput) (*models.User, error) {
-	return r.authService.SignUp(ctx, input)
-}
-func (r *Resolver) Query() generated1.QueryResolver { return &queryResolver{r} }
-type queryResolver struct{ *Resolver }
-*/

@@ -18,11 +18,11 @@ input SignInInput {
 	Password: String!
 }
 
-# type Query {
+# extend type Query {
 # 	//
 # }
 
-type Mutation {
+extend type Mutation {
 	signUp(input: SignUpInput!): User!
 	signIn(input: SignInInput!): User!
 }

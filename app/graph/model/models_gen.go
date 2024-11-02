@@ -2,7 +2,15 @@
 
 package model
 
+type Mutation struct {
+}
+
 type Query struct {
+}
+
+type SignInInput struct {
+	Email    string `json:"Email"`
+	Password string `json:"Password"`
 }
 
 type SignUpInput struct {

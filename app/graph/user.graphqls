@@ -13,6 +13,16 @@ input SignUpInput {
 	Password: String!
 }
 
-type Query {
+input SignInInput {
+	Email: String!
+	Password: String!
+}
+
+# type Query {
+# 	//
+# }
+
+type Mutation {
 	signUp(input: SignUpInput!): User!
+	signIn(input: SignInInput!): User!
 }

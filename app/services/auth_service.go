@@ -1,25 +1,28 @@
 package services
 
 import (
-	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
+	"app/validator"
+	"app/view"
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
 )
 
+type TokenString = string
+
 type AuthService interface {
-	SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse
-	SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse
+	SignUp(ctx context.Context, requestParams model.SignUpInput) (*models.User, error)
+	SignIn(ctx context.Context, requestParams model.SignInInput) (TokenString, *models.User, error)
 	GetAuthUser(ctx *gin.Context) (*models.User, error)
 	Getuser(ctx context.Context, id int) *models.User
 }
@@ -32,41 +35,42 @@ func NewAuthService(db *sql.DB) AuthService {
 	return &authService{db}
 }
 
-func (as *authService) SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse {
+func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInput) (*models.User, error) {
 	// NOTE: バリデーションチェック
-	validate := validator.New()
-	validationErrors := validate.Struct(requestParams)
+	validationErrors := validator.ValidateUser(requestParams)
 	if validationErrors != nil {
-		return &dto.SignUpResponse{User: models.User{}, Error: validationErrors, ErrorType: "validationError"}
+		return &models.User{}, view.NewBadRequestView(validationErrors)
 	}
 
+	// NOTE: パラメータをアサイン
 	user := models.User{}
 	user.Name = requestParams.Name
 	user.Email = requestParams.Email
 	// NOTE: パスワードをハッシュ化の上、Create処理
 	hashedPassword, err := as.encryptPassword(requestParams.Password)
 	if err != nil {
-		return &dto.SignUpResponse{User: user, Error: err, ErrorType: "internalServerError"}
+		return &user, view.NewInternalServerErrorView(err)
 	}
 	user.Password = hashedPassword
+
 	createErr := user.Insert(ctx, as.db, boil.Infer())
 	if createErr != nil {
-		log.Fatalln(createErr)
+		return &user, view.NewInternalServerErrorView(createErr)
 	}
 
-	return &dto.SignUpResponse{User: user, Error: nil, ErrorType: ""}
+	return &user, nil
 }
 
-func (as *authService) SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse {
+func (as *authService) SignIn(ctx context.Context, requestParams model.SignInInput) (TokenString, *models.User, error) {
 	// NOTE: emailからユーザの取得
 	user, err := models.Users(qm.Where("email = ?", requestParams.Email)).One(ctx, as.db)
 	if err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "メールアドレスまたはパスワードに該当するユーザが存在しません。", Error: nil}
+		return "", &models.User{}, view.NewNotFoundView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 
 	// NOTE: パスワードの照合
 	if err := as.compareHashPassword(user.Password, requestParams.Password); err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "メールアドレスまたはパスワードに該当するユーザが存在しません。", Error: nil}
+		return "", &models.User{}, view.NewNotFoundView(fmt.Errorf("メールアドレスまたはパスワードに該当するユーザが存在しません。"))
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"user_id": user.ID,
@@ -75,9 +79,9 @@ func (as *authService) SignIn(ctx context.Context, requestParams dto.SignInReque
 	// TODO: JWT_SECRETを環境変数に切り出す
 	tokenString, err := token.SignedString([]byte("abcdefghijklmn"))
 	if err != nil {
-		return &dto.SignInResponse{TokenString: "", NotFoundMessage: "", Error: err}
+		return "", &models.User{}, view.NewInternalServerErrorView(err)
 	}
-	return &dto.SignInResponse{TokenString: tokenString, NotFoundMessage: "", Error: nil}
+	return tokenString, user, nil
 }
 
 func (as *authService) GetAuthUser(ctx *gin.Context) (*models.User, error) {

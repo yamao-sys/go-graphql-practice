@@ -1,7 +1,7 @@
 package services
 
 import (
-	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
 	"app/test/factories"
 	"testing"
@@ -29,12 +29,11 @@ func (s *TestAuthServiceSuite) TearDownTest() {
 }
 
 func (s *TestAuthServiceSuite) TestSignUp() {
-	requestParams := dto.SignUpRequest{Name: "test name 1", Email: "test@example.com", Password: "password"}
+	requestParams := model.SignUpInput{Name: "test name 1", Email: "test@example.com", Password: "password"}
 
-	result := testAuthService.SignUp(ctx, requestParams)
+	_, err := testAuthService.SignUp(ctx, requestParams)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.ErrorType)
+	assert.Nil(s.T(), err)
 
 	// NOTE: ユーザが作成されていることを確認
 	isExistUser, err := models.Users(
@@ -47,12 +46,11 @@ func (s *TestAuthServiceSuite) TestSignUp() {
 }
 
 func (s *TestAuthServiceSuite) TestSignUp_ValidationError() {
-	requestParams := dto.SignUpRequest{Name: "test name 1", Email: "", Password: "password"}
+	requestParams := model.SignUpInput{Name: "test name 1", Email: "", Password: "password"}
 
-	result := testAuthService.SignUp(ctx, requestParams)
+	_, err := testAuthService.SignUp(ctx, requestParams)
 
-	assert.NotNil(s.T(), result.Error)
-	assert.Equal(s.T(), "validationError", result.ErrorType)
+	assert.NotNil(s.T(), err)
 
 	// NOTE: ユーザが作成されていないことを確認
 	isExistUser, _ := models.Users(
@@ -68,13 +66,12 @@ func (s *TestAuthServiceSuite) TestSignIn() {
 		s.T().Fatalf("failed to create test user %v", err)
 	}
 
-	requestParams := dto.SignInRequest{Email: "test@example.com", Password: "password"}
+	requestParams := model.SignInInput{Email: "test@example.com", Password: "password"}
 
-	result := testAuthService.SignIn(ctx, requestParams)
+	token, _, err := testAuthService.SignIn(ctx, requestParams)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.NotFoundMessage)
-	assert.NotNil(s.T(), result.TokenString)
+	assert.NotNil(s.T(), token)
+	assert.Nil(s.T(), err)
 }
 
 func (s *TestAuthServiceSuite) TestSignIn_NotFoundError() {
@@ -84,11 +81,12 @@ func (s *TestAuthServiceSuite) TestSignIn_NotFoundError() {
 		s.T().Fatalf("failed to create test user %v", err)
 	}
 
-	requestParams := dto.SignInRequest{Email: "test_1@example.com", Password: "password"}
+	requestParams := model.SignInInput{Email: "test_1@example.com", Password: "password"}
 
-	result := testAuthService.SignIn(ctx, requestParams)
+	token, _, err := testAuthService.SignIn(ctx, requestParams)
 
-	assert.Equal(s.T(), "メールアドレスまたはパスワードに該当するユーザが存在しません。", result.NotFoundMessage)
+	assert.Empty(s.T(), token)
+	assert.NotNil(s.T(), err)
 }
 
 func TestAuthService(t *testing.T) {

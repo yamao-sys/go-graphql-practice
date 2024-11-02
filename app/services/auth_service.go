@@ -2,23 +2,25 @@ package services
 
 import (
 	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
+	"app/validator"
+	"app/view"
 	"context"
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/go-playground/validator/v10"
+
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type AuthService interface {
-	SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse
+	SignUp(ctx context.Context, requestParams model.SignUpInput) (*models.User, error)
 	SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse
 	GetAuthUser(ctx *gin.Context) (*models.User, error)
 	Getuser(ctx context.Context, id int) *models.User
@@ -32,29 +34,30 @@ func NewAuthService(db *sql.DB) AuthService {
 	return &authService{db}
 }
 
-func (as *authService) SignUp(ctx context.Context, requestParams dto.SignUpRequest) *dto.SignUpResponse {
+func (as *authService) SignUp(ctx context.Context, requestParams model.SignUpInput) (*models.User, error) {
 	// NOTE: バリデーションチェック
-	validate := validator.New()
-	validationErrors := validate.Struct(requestParams)
+	validationErrors := validator.ValidateUser(requestParams)
 	if validationErrors != nil {
-		return &dto.SignUpResponse{User: models.User{}, Error: validationErrors, ErrorType: "validationError"}
+		return &models.User{}, view.NewBadRequestUserView(validationErrors)
 	}
 
+	// NOTE: パラメータをアサイン
 	user := models.User{}
 	user.Name = requestParams.Name
 	user.Email = requestParams.Email
 	// NOTE: パスワードをハッシュ化の上、Create処理
 	hashedPassword, err := as.encryptPassword(requestParams.Password)
 	if err != nil {
-		return &dto.SignUpResponse{User: user, Error: err, ErrorType: "internalServerError"}
+		return &user, view.NewInternalServerErrorUserView(err)
 	}
 	user.Password = hashedPassword
+
 	createErr := user.Insert(ctx, as.db, boil.Infer())
 	if createErr != nil {
-		log.Fatalln(createErr)
+		return &user, view.NewInternalServerErrorUserView(createErr)
 	}
 
-	return &dto.SignUpResponse{User: user, Error: nil, ErrorType: ""}
+	return &user, nil
 }
 
 func (as *authService) SignIn(ctx context.Context, requestParams dto.SignInRequest) *dto.SignInResponse {

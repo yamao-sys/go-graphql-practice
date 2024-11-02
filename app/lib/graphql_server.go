@@ -7,6 +7,7 @@ import (
 	"app/services"
 	"app/view"
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 
@@ -15,8 +16,12 @@ import (
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
-func GetGraphQLServer(authService services.AuthService) *handler.Server {
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: graph.NewResolver(authService)}))
+func GetGraphQLHttpHandler(db *sql.DB) http.Handler {
+	// NOTE: service
+	authService := services.NewAuthService(db)
+	todoService := services.NewTodoService(db)
+
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: graph.NewResolver(authService, todoService)}))
 
 	srv.SetErrorPresenter(func(ctx context.Context, e error) *gqlerror.Error {
 		err := graphql.DefaultErrorPresenter(ctx, e)
@@ -38,10 +43,6 @@ func GetGraphQLServer(authService services.AuthService) *handler.Server {
 		return err
 	})
 
-	return srv
-}
-
-func GetGraphQLHttpHandler(srv *handler.Server) http.Handler {
 	graphSrv := graph.Middleware(srv)
-	return auth.Middleware(graphSrv)
+	return auth.Middleware(graphSrv, db)
 }

@@ -8,10 +8,12 @@ import "app/services"
 
 type Resolver struct {
 	authService services.AuthService
+	todoService services.TodoService
 }
 
-func NewResolver(authService services.AuthService) *Resolver {
+func NewResolver(authService services.AuthService, todoService services.TodoService) *Resolver {
 	return &Resolver{
 		authService: authService,
+		todoService: todoService,
 	}
 }

@@ -3,7 +3,6 @@ package resolvers
 import (
 	"app/lib"
 	models "app/models/generated"
-	"app/services"
 	"app/test/factories"
 	"encoding/json"
 	"net/http"
@@ -11,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -23,16 +21,14 @@ type TestUserResolverSuite struct {
 }
 
 var (
-	testUserGraphQLServer *handler.Server
+	testUserGraphQLServerHandler http.Handler
 )
 
 func (s *TestUserResolverSuite) SetupTest() {
 	s.SetDBCon()
 
-	authService := services.NewAuthService(DBCon)
-
 	// NOTE: テスト対象のサーバのハンドラを設定
-	testUserGraphQLServer = lib.GetGraphQLServer(authService)
+	testUserGraphQLServerHandler = lib.GetGraphQLHttpHandler(DBCon)
 }
 
 func (s *TestUserResolverSuite) TearDownTest() {
@@ -59,7 +55,7 @@ func (s *TestUserResolverSuite) TestSignUp() {
 	signUpRequestBody, _ := json.Marshal(query)
 	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
 	req.Header.Set("Content-Type", "application/json")
-	testUserGraphQLServer.ServeHTTP(res, req)
+	testUserGraphQLServerHandler.ServeHTTP(res, req)
 
 	assert.Equal(s.T(), 200, res.Code)
 	responseBody := make(map[string]interface{})
@@ -93,7 +89,7 @@ func (s *TestUserResolverSuite) TestSignUp_ValidationError() {
 	signUpRequestBody, _ := json.Marshal(query)
 	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
 	req.Header.Set("Content-Type", "application/json")
-	testUserGraphQLServer.ServeHTTP(res, req)
+	testUserGraphQLServerHandler.ServeHTTP(res, req)
 
 	assert.Equal(s.T(), 200, res.Code)
 	responseBody := make(map[string]([1]map[string]map[string]interface{}))
@@ -133,7 +129,7 @@ func (s *TestUserResolverSuite) TestSignIn() {
 	signInRequestBody, _ := json.Marshal(query)
 	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signInRequestBody)))
 	req.Header.Set("Content-Type", "application/json")
-	lib.GetGraphQLHttpHandler(testUserGraphQLServer).ServeHTTP(res, req)
+	testUserGraphQLServerHandler.ServeHTTP(res, req)
 
 	assert.Equal(s.T(), 200, res.Code)
 }

@@ -40,8 +40,7 @@ func (s *TestTodoServiceSuite) TearDownTest() {
 }
 
 func (s *TestTodoServiceSuite) TestCreateTodo() {
-	content := "test content 1"
-	requestParams := model.CreateTodoInput{Title: "test title 1", Content: &content}
+	requestParams := model.CreateTodoInput{Title: "test title 1", Content: "test content 1"}
 
 	_, err := testTodoService.CreateTodo(ctx, requestParams, user.ID)
 
@@ -55,8 +54,7 @@ func (s *TestTodoServiceSuite) TestCreateTodo() {
 }
 
 func (s *TestTodoServiceSuite) TestCreateTodo_ValidationError() {
-	content := "test content 1"
-	requestParams := model.CreateTodoInput{Title: "", Content: &content}
+	requestParams := model.CreateTodoInput{Title: "", Content: "test content 1"}
 
 	_, err := testTodoService.CreateTodo(ctx, requestParams, user.ID)
 

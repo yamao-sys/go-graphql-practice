@@ -1,23 +1,71 @@
 package auth
 
 import (
+	models "app/models/generated"
 	"context"
+	"database/sql"
+	"fmt"
+	"log"
 	"net/http"
+
+	"github.com/golang-jwt/jwt"
 )
 
-// ログインのresponse.writer
-type signInContextKey string
-
-const signInWriterKey signInContextKey = "signInWriter"
+const signInWriterKey string = "signInWriter"
 const authCookieKey string = "token"
 
-func Middleware(next http.Handler) http.Handler {
+const userKey string = "user"
+
+func Middleware(next http.Handler, db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// NOTE: ログイン時のCookieをResponseWriterでセットするためのcontextをセット
 		ctx := context.WithValue(r.Context(), signInWriterKey, w)
 		r = r.WithContext(ctx)
+
+		// NOTE: リクエストからCookieを取得
+		tokenString, err := r.Cookie(authCookieKey)
+		// NOTE: 未認証でもアクセス可のページ
+		if err != nil || tokenString == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// NOTE: tokenに該当するユーザを取得する
+		token, err := jwt.Parse(tokenString.Value, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+
+			return []byte("abcdefghijklmn"), nil
+		})
+		if err != nil {
+			fmt.Errorf("failt jwt parse")
+		}
+
+		var userID int
+		if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			userID = int(claims["user_id"].(float64))
+		}
+		if userID == 0 {
+			fmt.Errorf("invalid token")
+		}
+		user, err := models.FindUser(ctx, db, userID)
+		log.Println(user)
+
+		// NOTE: Contextにuserをセットする
+		withUserContext := context.WithValue(r.Context(), userKey, user)
+		r = r.WithContext(withUserContext)
+
 		next.ServeHTTP(w, r)
 	})
+}
+
+func GetUser(ctx context.Context) *models.User {
+	user, e := ctx.Value(userKey).(*models.User)
+	if e == false {
+		log.Println(e)
+	}
+	return user
 }
 
 func SetAuthCookie(ctx context.Context, token string) {

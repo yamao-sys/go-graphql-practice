@@ -42,7 +42,7 @@ func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.Creat
 
 	todo := &models.Todo{}
 	todo.Title = requestParams.Title
-	todo.Content = null.String{String: *requestParams.Content, Valid: true}
+	todo.Content = null.String{String: requestParams.Content, Valid: true}
 	todo.UserID = userID
 
 	// NOTE: Create処理

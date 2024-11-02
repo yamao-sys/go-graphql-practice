@@ -3,7 +3,6 @@ package main
 import (
 	"app/db"
 	"app/lib"
-	"app/services"
 	"log"
 	"net/http"
 	"os"
@@ -22,13 +21,8 @@ func main() {
 	// NOTE: DB接続
 	dbCon := db.Init()
 
-	// NOTE: service
-	authService := services.NewAuthService(dbCon)
-
-	srv := lib.GetGraphQLServer(authService)
-
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", lib.GetGraphQLHttpHandler(srv))
+	http.Handle("/query", lib.GetGraphQLHttpHandler(dbCon))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

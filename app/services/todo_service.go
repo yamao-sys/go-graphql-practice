@@ -1,12 +1,12 @@
 package services
 
 import (
-	"app/dto"
 	"app/graph/model"
 	models "app/models/generated"
 	"app/view"
 	"context"
 	"database/sql"
+	"strconv"
 
 	"app/validator"
 
@@ -21,7 +21,7 @@ type TodoService interface {
 	FetchTodoLists(ctx context.Context, userID int) ([]*models.Todo, error)
 	FetchTodo(ctx context.Context, id int, userID int) (*models.Todo, error)
 	UpdateTodo(ctx context.Context, id int, requestParams model.UpdateTodoInput, userID int) (*models.Todo, error)
-	DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse
+	DeleteTodo(ctx context.Context, id int, userID int) (string, error)
 }
 
 type todoService struct {
@@ -93,15 +93,15 @@ func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams mod
 	return todo, nil
 }
 
-func (ts *todoService) DeleteTodo(ctx context.Context, id int, userID int) *dto.DeleteTodoResponse {
-	todo, error := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
-	if error != nil {
-		return &dto.DeleteTodoResponse{Error: error, ErrorType: "notFound"}
+func (ts *todoService) DeleteTodo(ctx context.Context, id int, userID int) (string, error) {
+	todo, err := models.Todos(qm.Where("id = ? AND user_id = ?", id, userID)).One(ctx, ts.db)
+	if err != nil {
+		return strconv.Itoa(id), view.NewNotFoundUserView(err)
 	}
 
 	_, deleteError := todo.Delete(ctx, ts.db)
 	if deleteError != nil {
-		return &dto.DeleteTodoResponse{Error: deleteError, ErrorType: "internalServerError"}
+		return strconv.Itoa(id), view.NewInternalServerErrorUserView(deleteError)
 	}
-	return &dto.DeleteTodoResponse{Error: nil, ErrorType: ""}
+	return strconv.Itoa(id), nil
 }

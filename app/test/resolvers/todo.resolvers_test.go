@@ -514,6 +514,98 @@ func (s *TestTodoResolverSuite) TestUpdateTodo_ValidationError() {
 	assert.Equal(s.T(), float64(400), responseBody["errors"][0]["extensions"]["code"])
 }
 
+func (s *TestTodoResolverSuite) TestDeleteTodo_Unauthorized() {
+	s.SetAuthUser()
+	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}
+	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test todos %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	id := strconv.Itoa(testTodo.ID)
+	query := map[string]interface{}{
+		"query": `mutation {
+            deleteTodo(id: ` + id + `)
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string]([1]map[string]map[string]interface{}))
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Equal(s.T(), float64(401), responseBody["errors"][0]["extensions"]["code"])
+}
+
+func (s *TestTodoResolverSuite) TestDeleteTodo() {
+	s.SetAuthUser()
+	s.SignIn()
+
+	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: user.ID}
+	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test todos %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	id := strconv.Itoa(testTodo.ID)
+	query := map[string]interface{}{
+		"query": `mutation {
+            deleteTodo(id: ` + id + `)
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "token="+token)
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string]interface{})
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Contains(s.T(), responseBody["data"], "deleteTodo")
+
+	// NOTE: TODOが削除されていることの確認
+	reloadErr := testTodo.Reload(ctx, DBCon)
+	assert.NotNil(s.T(), reloadErr)
+}
+
+func (s *TestTodoResolverSuite) TestDeleteTodo_NotFound() {
+	s.SetAuthUser()
+	s.SignIn()
+
+	otherUser := factories.UserFactory.MustCreateWithOption(map[string]interface{}{"Email": "test_2@example.com"}).(*models.User)
+	if err := otherUser.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test user %v", err)
+	}
+	testTodo := models.Todo{Title: "test title 1", Content: null.String{String: "test content 1", Valid: true}, UserID: otherUser.ID}
+	if err := testTodo.Insert(ctx, DBCon, boil.Infer()); err != nil {
+		s.T().Fatalf("failed to create test todos %v", err)
+	}
+
+	res := httptest.NewRecorder()
+	id := strconv.Itoa(testTodo.ID)
+	query := map[string]interface{}{
+		"query": `mutation {
+            deleteTodo(id: ` + id + `)
+        }`,
+	}
+
+	signUpRequestBody, _ := json.Marshal(query)
+	req := httptest.NewRequest(http.MethodPost, "/query", strings.NewReader(string(signUpRequestBody)))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Cookie", "token="+token)
+	testTodoGraphQLServerHandler.ServeHTTP(res, req)
+
+	assert.Equal(s.T(), 200, res.Code)
+	responseBody := make(map[string]([1]map[string]map[string]interface{}))
+	_ = json.Unmarshal(res.Body.Bytes(), &responseBody)
+	assert.Equal(s.T(), float64(404), responseBody["errors"][0]["extensions"]["code"])
+}
+
 func TestTodoResolver(t *testing.T) {
 	// テストスイートを実施
 	suite.Run(t, new(TestTodoResolverSuite))

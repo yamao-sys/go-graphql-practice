@@ -4,6 +4,7 @@ import (
 	"app/graph/model"
 	models "app/models/generated"
 	"app/test/factories"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -147,13 +148,13 @@ func (s *TestTodoServiceSuite) TestDeleteTodo() {
 		s.T().Fatalf("failed to create test todos %v", err)
 	}
 
-	result := testTodoService.DeleteTodo(ctx, testTodo.ID, user.ID)
+	id, err := testTodoService.DeleteTodo(ctx, testTodo.ID, user.ID)
 
-	assert.Nil(s.T(), result.Error)
-	assert.Equal(s.T(), "", result.ErrorType)
+	assert.Nil(s.T(), err)
+	assert.Equal(s.T(), strconv.Itoa(testTodo.ID), id)
 	// NOTE: TODOが削除されていることの確認
-	err := testTodo.Reload(ctx, DBCon)
-	assert.NotNil(s.T(), err)
+	reloadErr := testTodo.Reload(ctx, DBCon)
+	assert.NotNil(s.T(), reloadErr)
 }
 
 func TestTodoService(t *testing.T) {

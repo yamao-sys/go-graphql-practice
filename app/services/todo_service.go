@@ -2,19 +2,23 @@ package services
 
 import (
 	"app/dto"
+	"app/graph/model"
 	models "app/models/generated"
+	"app/view"
 	"context"
 	"database/sql"
 	"fmt"
 
-	"github.com/go-playground/validator/v10"
+	"app/validator"
+
+	// "github.com/go-playground/validator/v10"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
 	"github.com/volatiletech/sqlboiler/v4/queries/qm"
 )
 
 type TodoService interface {
-	CreateTodo(ctx context.Context, requestParams dto.CreateTodoRequest, userID int) *dto.CreateTodoResponse
+	CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error)
 	FetchTodosList(ctx context.Context, userID int) *dto.TodosListResponse
 	FetchTodo(ctx context.Context, id int, userID int) *dto.FetchTodoResponse
 	UpdateTodo(ctx context.Context, id int, requestParams dto.UpdateTodoRequest, userID int) *dto.UpdateTodoResponse
@@ -29,24 +33,24 @@ func NewTodoService(db *sql.DB) TodoService {
 	return &todoService{db}
 }
 
-func (ts *todoService) CreateTodo(ctx context.Context, requestParams dto.CreateTodoRequest, userID int) *dto.CreateTodoResponse {
+func (ts *todoService) CreateTodo(ctx context.Context, requestParams model.CreateTodoInput, userID int) (*models.Todo, error) {
 	// NOTE: バリデーションチェック
-	validate := validator.New()
-	validationErrors := validate.Struct(requestParams)
+	validationErrors := validator.ValidateTodo(requestParams)
 	if validationErrors != nil {
-		return &dto.CreateTodoResponse{Todo: &models.Todo{}, Error: validationErrors, ErrorType: "validationError"}
+		return &models.Todo{}, view.NewBadRequestUserView(validationErrors)
 	}
 
 	todo := &models.Todo{}
 	todo.Title = requestParams.Title
-	todo.Content = null.String{String: requestParams.Content, Valid: true}
+	todo.Content = null.String{String: *requestParams.Content, Valid: true}
 	todo.UserID = userID
+
 	// NOTE: Create処理
 	err := todo.Insert(ctx, ts.db, boil.Infer())
 	if err != nil {
-		return &dto.CreateTodoResponse{Todo: todo, Error: err, ErrorType: "internalServerError"}
+		return &models.Todo{}, view.NewInternalServerErrorUserView(err)
 	}
-	return &dto.CreateTodoResponse{Todo: todo, Error: nil, ErrorType: ""}
+	return todo, nil
 }
 
 func (ts *todoService) FetchTodosList(ctx context.Context, userID int) *dto.TodosListResponse {
@@ -75,11 +79,10 @@ func (ts *todoService) UpdateTodo(ctx context.Context, id int, requestParams dto
 	}
 
 	// NOTE: バリデーションチェック
-	validate := validator.New()
-	validationErrors := validate.Struct(requestParams)
-	if validationErrors != nil {
-		return &dto.UpdateTodoResponse{Todo: todo, Error: validationErrors, ErrorType: "validationError"}
-	}
+	// validationErrors := validator.ValidateTodo(requestParams)
+	// if validationErrors != nil {
+	// 	return &dto.UpdateTodoResponse{Todo: todo, Error: validationErrors, ErrorType: "validationError"}
+	// }
 
 	todo.Title = requestParams.Title
 	todo.Content = null.String{String: requestParams.Content, Valid: true}

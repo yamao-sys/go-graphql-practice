@@ -10,10 +10,15 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
-const signInWriterKey string = "signInWriter"
-const authCookieKey string = "token"
+type contextKey struct {
+	uuid string
+}
 
-const userKey string = "user"
+var (
+	signInWriterKey = contextKey{"signInWriter"}
+	userKey         = contextKey{"user"}
+	authCookieKey   = "token"
+)
 
 func Middleware(next http.Handler, db *sql.DB) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +43,9 @@ func Middleware(next http.Handler, db *sql.DB) http.Handler {
 			return []byte("abcdefghijklmn"), nil
 		})
 		if err != nil {
-			fmt.Errorf("failt jwt parse")
+			next.ServeHTTP(w, r)
+			fmt.Println("failt jwt parse")
+			return
 		}
 
 		var userID int
@@ -46,9 +53,11 @@ func Middleware(next http.Handler, db *sql.DB) http.Handler {
 			userID = int(claims["user_id"].(float64))
 		}
 		if userID == 0 {
-			fmt.Errorf("invalid token")
+			next.ServeHTTP(w, r)
+			fmt.Println("invalid token")
+			return
 		}
-		user, err := models.FindUser(ctx, db, userID)
+		user, _ := models.FindUser(ctx, db, userID)
 
 		// NOTE: Contextにuserをセットする
 		withUserContext := context.WithValue(r.Context(), userKey, user)

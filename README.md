@@ -10,8 +10,7 @@ CIでの課金の心配がない状態であれば(Playwrightとか使えば)、
 
 → バックエンドの不具合はバックエンドのテストで拾えるのが理想かと考える
 
-Resolverで指定したFieldが取得できるのかをテストしたい
-
+Resolverで指定したFieldが取得できるのかをテストしたい(純粋なhttptestを使えばできる)
 
 ## 参考
 - https://qiita.com/zigenin/items/df9359bf2f209d08f117
@@ -22,6 +21,9 @@ Resolverで指定したFieldが取得できるのかをテストしたい
 	- https://tech.layerx.co.jp/entry/2021/10/22/171242
 - カスタムエラーを返す
 	- https://www.wheatandcat.me/entry/2022/03/22/084127
+- gqlgenとhttptestを使用してテストを行う
+	- https://zenn.dev/ygsn/articles/b5d843774ed524
+	- https://budougumi0617.github.io/2020/05/29/go-testing-httptest/
 
 ## やってみた所管
 - sqlboilerと組み合わせて行うと、go-playground/validatorが使いづらい...
